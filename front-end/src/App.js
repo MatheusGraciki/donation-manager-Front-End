@@ -60,7 +60,6 @@ export default function App() {
     return `${day}/${month}/${year}`;
   };
 
-
   // Handle deleting a donation
   const handleDelete = (index) => {
     const updated = donations.filter((_, i) => i !== index);
