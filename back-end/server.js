@@ -18,9 +18,22 @@ if (!fs.existsSync(dataPath)) {
   fs.writeFileSync(dataPath, JSON.stringify([]), "utf8");
 }
 
-// Basic endpoint to test the server
-app.get("/", (req, res) => {
-  res.send("Donation backend is running!");
+// Route to get all donations
+app.get("/donations", (req, res) => {
+  fs.readFile(DATA_FILE, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading donations file:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    try {
+      const donations = JSON.parse(data || "[]");
+      res.json(donations);
+    } catch (parseErr) {
+      console.error("Error parsing donations data:", parseErr);
+      res.status(500).json({ error: "Error parsing donation data" });
+    }
+  });
 });
 
 // Start the server
