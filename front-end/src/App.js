@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -13,7 +13,7 @@ import {
 import { Delete, Edit } from "@mui/icons-material";
 
 export default function App() {
-  // Save inputs locally before send to backend
+  // Save inputs locally before sending to the backend
   const [form, setForm] = useState({
     donorName: "",
     type: "money",
@@ -22,28 +22,27 @@ export default function App() {
     date: "",
   });
 
-  // Temporarily store submitted donations (will later be stored in backend)
+  // Store fetched donations from backend
   const [donations, setDonations] = useState([]);
 
-  // Update form inputs as user types
+  // Track which donation is being edited
+  const [editingId, setEditingId] = useState(null);
+
+  // Fetch existing donations from backend
+  useEffect(() => {
+    fetch("http://localhost:3001/donations")
+      .then((res) => res.json())
+      .then((data) => setDonations(data))
+      .catch((err) => console.error("Error loading donations:", err));
+  }, []);
+
+  // Handle form input changes
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Handle form submit
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // If user selected "other", use the customType field instead
-    const donationData = {
-      ...form,
-      type: form.type === "other" ? form.customType : form.type,
-    };
-
-    // Add donation to list (will replace with backend call later)
-    setDonations([...donations, donationData]);
-
-    // Clear form
+  // Reset form and editing state
+  const resetForm = () => {
     setForm({
       donorName: "",
       type: "money",
@@ -51,21 +50,83 @@ export default function App() {
       amount: "",
       date: "",
     });
+    setEditingId(null);
   };
 
-  // Format date from 'yyyy-mm-dd' to 'dd/mm/yyyy'
+  // Submit donation to backend (create or update)
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const donationData = {
+      ...form,
+      type: form.type === "other" ? form.customType : form.type,
+    };
+
+    if (editingId) {
+      // Edit existing donation
+      fetch(`http://localhost:3001/donations/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(donationData),
+      })
+        .then((res) => res.json())
+        .then((updatedDonation) => {
+          setDonations((prev) =>
+            prev.map((d) => (d.id === editingId ? updatedDonation : d))
+          );
+          resetForm();
+        })
+        .catch((err) => console.error("Error updating donation:", err));
+    } else {
+      // Create new donation
+      fetch("http://localhost:3001/donations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(donationData),
+      })
+        .then((res) => res.json())
+        .then((newDonation) => {
+          setDonations((prev) => [...prev, newDonation]);
+          resetForm();
+        })
+        .catch((err) => console.error("Error saving donation:", err));
+    }
+  };
+
+  // Load donation data into form for editing
+  const handleEdit = (donation) => {
+    setForm({
+      donorName: donation.donorName,
+      type: ["money", "food", "clothing"].includes(donation.type)
+        ? donation.type
+        : "other",
+      customType: ["money", "food", "clothing"].includes(donation.type)
+        ? ""
+        : donation.type,
+      amount: donation.amount,
+      date: donation.date,
+    });
+    setEditingId(donation.id);
+  };
+
+  // Format date to dd/mm/yyyy
   const formatDate = (isoDate) => {
     if (!isoDate) return "";
     const [year, month, day] = isoDate.split("-");
     return `${day}/${month}/${year}`;
   };
 
-  // Handle deleting a donation
-  const handleDelete = (index) => {
-    const updated = donations.filter((_, i) => i !== index);
-    setDonations(updated);
+  // Delete donation
+  const handleDelete = (id) => {
+    fetch(`http://localhost:3001/donations/${id}`, {
+      method: "DELETE",
+    })
+      .then(() => {
+        setDonations((prev) => prev.filter((d) => d.id !== id));
+        if (editingId === id) resetForm();
+      })
+      .catch((err) => console.error("Error deleting donation:", err));
   };
-
 
   return (
     <Container maxWidth="sm">
@@ -102,7 +163,6 @@ export default function App() {
           <MenuItem value="other">Other</MenuItem>
         </TextField>
 
-        {/* Show custom type input if "other" is selected */}
         {form.type === "other" && (
           <TextField
             name="customType"
@@ -136,28 +196,33 @@ export default function App() {
         />
 
         <Button variant="contained" type="submit">
-          Add Donation
+          {editingId ? "Update Donation" : "Add Donation"}
         </Button>
+        {editingId && (
+          <Button variant="outlined" onClick={resetForm}>
+            Cancel Edit
+          </Button>
+        )}
       </Box>
 
-      {/* Donation List */}
+      {/* Donations List */}
       <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
         Donations List
       </Typography>
 
       <Stack spacing={2}>
-        {donations.map((donation, index) => (
-          <Paper key={index} sx={{ p: 2 }}>
+        {donations.map((donation) => (
+          <Paper key={donation.id} sx={{ p: 2 }}>
             <Typography>
-              <strong>{donation.donorName}</strong> donated{" US$ "}
-              <strong>{donation.amount}</strong> ({donation.type}) on{" "}
-              <strong>{formatDate(donation.date)}</strong>
+              <strong>{donation.donorName}</strong> donated US$
+              <strong>{donation.amount}</strong> ({donation.type}) on
+              <strong> {formatDate(donation.date)}</strong>
             </Typography>
             <Box>
-              <IconButton onClick={() => handleDelete(index)} color="error">
+              <IconButton onClick={() => handleDelete(donation.id)} color="error">
                 <Delete />
               </IconButton>
-              <IconButton disabled>
+              <IconButton onClick={() => handleEdit(donation)} color="primary">
                 <Edit />
               </IconButton>
             </Box>
