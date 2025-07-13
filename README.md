@@ -1,70 +1,138 @@
-# Getting Started with Create React App
+# Donation Manager — Full Stack Project
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Project Overview
 
-## Available Scripts
+This is a simple full stack application to manage donations. It includes:
 
-In the project directory, you can run:
+- **Backend:** Node.js with Express, storing data in a JSON file (`donations.json`).
+- **Frontend:** React with Material UI for UI components.
+- **Features:** Create, read, update, and delete donations via REST API and frontend UI.
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Getting Started
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Prerequisites
 
-### `npm test`
+- [Node.js](https://nodejs.org/) installed (version 14+ recommended)
+- npm (comes with Node.js)
+- Git (optional, for cloning repo)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## Backend Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Open terminal and navigate to the `backend folder`.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Install dependencies:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm install
 
-### `npm run eject`
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+node server.js
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+http://localhost:3001
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## API Documentation
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+#### Returns all registered donations
 
-## Learn More
+```http
+  GET /donations
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Creates a new donation
 
-### Code Splitting
+```http
+  POST /donations
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+| Params   | Type        | Description                                   |
+| :---------- | :--------- | :------------------------------------------ |
+| `Body`      | `object` |  Donation data (example below) |
 
-### Analyzing the Bundle Size
+```json
+{
+  "donorName": "Jane Smith",
+  "type": "clothing",
+  "amount": "7",
+  "date": "2025-07-15"
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+#### Update donations
 
-### Making a Progressive Web App
+Update data donations
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```htpp
+PUT /donations/${id}
+```
 
-### Advanced Configuration
+| Params   | Type        | Description                                   |
+| :---------- | :--------- | :------------------------------------------ |
+| `id`      | `number` |  Required: ID of the donation to edit |
+| `body`      | `object` |  Updated donation data (example below) |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```json
+{
+  "id": 1231231231
+  "donorName": "Jane Smith",
+  "type": "clothing",
+  "amount": "7",
+}
+```
 
-### Deployment
+```htpp
+DELETE /donations/${id}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+| Params   | Type        | Description                                   |
+| :---------- | :--------- | :------------------------------------------ |
+| `id`      | `number` |  Required: ID of the donation to delete |
+| `body`      | `object` |  Donation data (example below)|
 
-### `npm run build` fails to minify
+```json
+{
+  "id": 1231231231
+  "donorName": "Jane Smith",
+  "type": "clothing",
+  "amount": "7",
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Front-End Setup
+
+1. Navigate to the frontend folder
+
+2. Install dependencies
+
+```bash
+npm install
+
+```
+
+```bash
+npm start
+```
+
+```bash 
+http://localhost:3000
+```
+
+## Usage
+
+- Fill out the form to add a new donation.
+- Donations will be listed below with options to delete (and optionally edit).
+- The form supports donation types like money, food, clothing, or a custom type.
+- All donations are saved through the backend API (/donations).
+
+## Notes
+- Ensure the backend is running on port 3001 before using the frontend.
+- If you change the backend port, update the fetch URLs in your frontend code accordingly.
