@@ -1,6 +1,10 @@
+// server.js
+// Part 1–4: Express server with full CRUD for donations using JSON file
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const { v4: uuidv4 } = require("uuid");
 const path = require("path");
 
 const app = express();
@@ -9,75 +13,69 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-const dataPath = path.join(__dirname, "donations.json");
+const DATA_FILE = path.join(__dirname, "donations.json");
 
-// if donations.json does not exist, create a void array
-if (!fs.existsSync(dataPath)) {
-  fs.writeFileSync(dataPath, JSON.stringify([]), "utf8");
+// Ensure the JSON file exists
+if (!fs.existsSync(DATA_FILE)) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify([]));
 }
 
-// GET /donations
+// Helper to read data from JSON file
+function readDonations() {
+  const data = fs.readFileSync(DATA_FILE);
+  return JSON.parse(data);
+}
+
+// Helper to write data to JSON file
+function writeDonations(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// GET all donations
 app.get("/donations", (req, res) => {
-  fs.readFile(dataPath, "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading donations file:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-    try {
-      const donations = JSON.parse(data || "[]");
-      res.json(donations);
-    } catch (parseErr) {
-      console.error("Error parsing donations data:", parseErr);
-      res.status(500).json({ error: "Error parsing donation data" });
-    }
-  });
+  const donations = readDonations();
+  res.json(donations);
 });
 
-// POST /donations
+// POST a new donation
 app.post("/donations", (req, res) => {
-  const { donorName, type, amount, date } = req.body;
+  const donation = { id: uuidv4(), ...req.body };
+  const donations = readDonations();
+  donations.push(donation);
+  writeDonations(donations);
+  res.status(201).json(donation);
+});
 
-  // Basic validation (could be extended later)
-  if (!donorName || !type || !amount || !date) {
-    return res.status(400).json({ error: "Missing required fields" });
+// PUT (update) a donation by ID
+app.put("/donations/:id", (req, res) => {
+  const { id } = req.params;
+  const donations = readDonations();
+  const index = donations.findIndex((d) => d.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Donation not found" });
   }
 
-  const newDonation = {
-    id: Date.now(),
-    donorName,
-    type,
-    amount,
-    date,
-  };
-
-
-  // Read → append → write
-  fs.readFile(dataPath, "utf8", (readErr, data) => {
-    if (readErr) {
-      console.error("Error reading donations file:", readErr);
-      return res.status(500).json({ error: "Could not read donations file" });
-    }
-
-    let donations = [];
-    try {
-      donations = JSON.parse(data || "[]");
-    } catch (parseErr) {
-      console.error("Error parsing donations:", parseErr);
-      return res.status(500).json({ error: "Invalid donations data" });
-    }
-
-    donations.push(newDonation);
-
-    fs.writeFile(dataPath, JSON.stringify(donations, null, 2), (writeErr) => {
-      if (writeErr) {
-        console.error("Error writing donations file:", writeErr);
-        return res.status(500).json({ error: "Could not save donation" });
-      }
-      res.status(201).json(newDonation);
-    });
-  });
+  donations[index] = { ...donations[index], ...req.body };
+  writeDonations(donations);
+  res.json(donations[index]);
 });
 
+// DELETE a donation by ID
+app.delete("/donations/:id", (req, res) => {
+  const { id } = req.params;
+  const donations = readDonations();
+  const filtered = donations.filter((d) => d.id !== id);
+
+  if (donations.length === filtered.length) {
+    return res.status(404).json({ error: "Donation not found" });
+  }
+
+  writeDonations(filtered);
+  res.status(204).send(); // No content
+});
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
